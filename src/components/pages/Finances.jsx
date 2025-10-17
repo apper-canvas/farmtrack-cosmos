@@ -225,11 +225,11 @@ const Finances = () => {
           crop: ''
         })),
         ...income.map(inc => ({
-          type: 'Income',
-          date: format(new Date(inc.harvestDate), 'yyyy-MM-dd'),
+type: 'Income',
+          date: format(new Date(inc.date), 'yyyy-MM-dd'),
           category: 'Harvest',
-          description: `${inc.quantity} ${inc.unit}`,
-          amount: inc.totalAmount,
+          description: `${inc.quantity} units @ $${inc.pricePerUnit}/unit`,
+          amount: inc.quantity * inc.pricePerUnit,
           farm: farms.find(f => f.Id === inc.farmId)?.name || '',
           crop: crops.find(c => c.Id === inc.cropId)?.name || ''
         }))
