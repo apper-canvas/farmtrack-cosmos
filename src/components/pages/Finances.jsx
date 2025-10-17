@@ -207,10 +207,63 @@ const Finances = () => {
         toast.success("Income record deleted successfully");
       } catch (err) {
         toast.error("Failed to delete income record");
-      }
+}
     }
   };
 
+  const handleExportCSV = () => {
+    try {
+      // Combine expenses and income into unified dataset
+      const combinedData = [
+        ...expenses.map(expense => ({
+          type: 'Expense',
+          date: format(new Date(expense.date), 'yyyy-MM-dd'),
+          category: expense.category,
+          description: expense.description,
+          amount: expense.amount,
+          farm: farms.find(f => f.Id === expense.farmId)?.name || '',
+          crop: ''
+        })),
+        ...income.map(inc => ({
+          type: 'Income',
+          date: format(new Date(inc.harvestDate), 'yyyy-MM-dd'),
+          category: 'Harvest',
+          description: `${inc.quantity} ${inc.unit}`,
+          amount: inc.totalAmount,
+          farm: farms.find(f => f.Id === inc.farmId)?.name || '',
+          crop: crops.find(c => c.Id === inc.cropId)?.name || ''
+        }))
+      ];
+
+      // Create CSV content with headers
+      const headers = ['Type', 'Date', 'Category', 'Description', 'Amount', 'Farm', 'Crop'];
+      const csvContent = [
+        headers.join(','),
+        ...combinedData.map(row => 
+          [row.type, row.date, row.category, row.description, row.amount, row.farm, row.crop]
+            .map(field => `"${String(field).replace(/"/g, '""')}"`)
+            .join(',')
+        )
+      ].join('\n');
+
+      // Create and trigger download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      const timestamp = format(new Date(), 'yyyy-MM-dd-HHmmss');
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', `farmtrack-finances-${timestamp}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Financial data exported successfully');
+    } catch (error) {
+      toast.error('Failed to export data');
+    }
+  };
   const getFarmName = (farmId) => {
     const farm = farms.find(f => f.Id.toString() === farmId);
     return farm ? farm.name : "General";
@@ -269,9 +322,13 @@ const Finances = () => {
           <h1 className="text-2xl font-bold text-gray-900">Financial Management</h1>
           <p className="text-gray-600 mt-1">
             Track your farm expenses and income to monitor profitability
-          </p>
+</p>
         </div>
         <div className="flex space-x-3">
+          <Button onClick={handleExportCSV} variant="secondary">
+            <ApperIcon name="Download" size={16} className="mr-2" />
+            Export CSV
+          </Button>
           <Button onClick={() => openExpenseModal()} variant="outline">
             <ApperIcon name="Minus" size={16} className="mr-2" />
             Add Expense
